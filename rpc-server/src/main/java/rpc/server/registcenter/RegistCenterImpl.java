@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.sound.midi.MidiDevice.Info;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,12 +26,9 @@ public class RegistCenterImpl implements RegistCenter {
 
 	private static boolean isRunning = false;
 
-	private static int port;
-
 	private static final Logger log = LoggerFactory.getLogger(RegistCenterImpl.class);
 
-	public RegistCenterImpl(int port) {
-		this.port = port;
+	public RegistCenterImpl() {
 	}
 
 	public void stop() {
@@ -38,10 +37,10 @@ public class RegistCenterImpl implements RegistCenter {
 
 	}
 
-	public void start() throws IOException {
+	public void start(String host,int port) throws IOException {
 		ServerSocket serverSocket = new ServerSocket();
-		serverSocket.bind(new InetSocketAddress(port));
-		System.out.println("start server");
+		serverSocket.bind(new InetSocketAddress(host,port));
+		log.info("start server");
 		try {
 			while (true) {
 				threadPool.execute(new ServiceTask(serverSocket.accept()));
@@ -62,10 +61,6 @@ public class RegistCenterImpl implements RegistCenter {
 		return isRunning;
 	}
 
-	public int getPort() {
-		return port;
-	}
-
 	private class ServiceTask implements Runnable {
 
 		Socket client = null;
@@ -83,6 +78,7 @@ public class RegistCenterImpl implements RegistCenter {
 				input = new ObjectInputStream(client.getInputStream());
 				String serviceName = input.readUTF();
 				String methodName = input.readUTF();
+				log.info("服务端接收到的serviceName: {},methodName: {}",serviceName,methodName);
 				Class<?>[] parameterTypes = (Class<?>[]) input.readObject();
 				Object[] arguments = (Object[]) input.readObject();
 				if (registMap.get(serviceName) == null) {
@@ -93,7 +89,7 @@ public class RegistCenterImpl implements RegistCenter {
 				Class serviceClass = registMap.get(serviceName);
 				Method method = serviceClass.getMethod(methodName, parameterTypes);
 				Object result = method.invoke(serviceClass.newInstance(), arguments);
-
+				log.info("服务端执行本地方法结果:{} ",result);
 				// 将操作结果反序列化,通过socket发送给客户端
 				output = new ObjectOutputStream(client.getOutputStream());
 				output.writeObject(result);
