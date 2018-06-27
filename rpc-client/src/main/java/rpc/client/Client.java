@@ -16,7 +16,7 @@ import rpc.api.IHelloService;
 public class Client {
 	
 	public static void main(String[] args) {
-		IHelloService service = RPCClient.getRemoteProxyObj(IHelloService.class, new InetSocketAddress("172.20.13.208", 12345));
+		IHelloService service = RPCClient.getRemoteProxyObj(IHelloService.class, new InetSocketAddress("localhost", 12345));
 		APIUser user = new APIUser();
 		user.setName("李国平");
 		user.setAge(100);
